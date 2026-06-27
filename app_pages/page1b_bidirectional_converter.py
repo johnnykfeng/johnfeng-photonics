@@ -1,7 +1,7 @@
 import streamlit as st
 import tomllib
 
-from photonic_units import (
+from johnfeng_photonics.photonic_units import (
     AngularFrequencyUnit,
     Frequency,
     FrequencyUnit,

@@ -1,6 +1,6 @@
 import numpy as np
 
-from photonic_units import (
+from .photonic_units import (
     AngularFrequency,
     AngularFrequencyUnit,
     Frequency,

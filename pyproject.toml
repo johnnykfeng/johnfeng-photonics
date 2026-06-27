@@ -1,3 +1,10 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/johnfeng_photonics"]
+
 [project]
 name = "johnfeng-photonics"
 version = "0.1.0"
@@ -12,5 +19,6 @@ dependencies = [
     "pillow==11.3.0",
     "plotly==6.3.1",
     "pydantic==2.10.6",
+    "ruff>=0.15.20",
     "streamlit==1.50.0",
 ]

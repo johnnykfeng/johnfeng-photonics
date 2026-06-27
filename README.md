@@ -107,6 +107,8 @@ uv sync
 | File / directory | Purpose |
 |------------------|---------|
 | `app.py` | Streamlit entry point |
+| `app_pages/` | Streamlit multipage app scripts |
+| `src/johnfeng_photonics/` | Installable library (units, equations, plots, PID modules) |
 | `pyproject.toml` | Project metadata and dependencies |
 | `uv.lock` | Locked dependency versions |
 | `.python-version` | Default Python version for uv |

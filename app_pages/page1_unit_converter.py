@@ -1,13 +1,13 @@
 import streamlit as st
 import tomllib
 
-from equations import (
+from johnfeng_photonics.equations import (
     dB_to_percent,
     dBm_to_mW,
     mW_to_dBm,
     percent_to_dB,
 )
-from photonic_units import (
+from johnfeng_photonics.photonic_units import (
     AngularFrequencyUnit,
     Frequency,
     FrequencyUnit,

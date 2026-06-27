@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from pydantic import ValidationError
 
-from photonic_units import (
+from johnfeng_photonics.photonic_units import (
     AngularFrequency,
     AngularFrequencyUnit,
     Frequency,

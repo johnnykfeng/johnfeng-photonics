@@ -1,8 +1,8 @@
 import streamlit as st
 import tomllib
 
-from equations import linewidth_freq_to_wvl, linewidth_wvl_to_freq
-from photonic_units import (
+from johnfeng_photonics.equations import linewidth_freq_to_wvl, linewidth_wvl_to_freq
+from johnfeng_photonics.photonic_units import (
     Frequency,
     FrequencyUnit,
     Wavelength,

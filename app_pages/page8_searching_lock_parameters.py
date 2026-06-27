@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
-from pid_lock_module import animate_s_curve
+from johnfeng_photonics.pid_lock_module import animate_s_curve
 
 
 def _fmt_value(value):

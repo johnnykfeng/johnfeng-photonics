@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-from equations import dBm_to_mW, mW_to_dBm
-from photonic_units import (
+from johnfeng_photonics.equations import dBm_to_mW, mW_to_dBm
+from johnfeng_photonics.photonic_units import (
     Frequency,
     FrequencyUnit,
     PhotonicUnit,

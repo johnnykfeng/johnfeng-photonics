@@ -14,7 +14,7 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from matplotlib.animation import FuncAnimation
-from pid_lock_module import cavity_transmission, create_simulation, animate_s_curve
+from johnfeng_photonics.pid_lock_module import cavity_transmission, create_simulation, animate_s_curve
 import matplotlib
 
 matplotlib.use("Agg")  # headless backend, no GUI window

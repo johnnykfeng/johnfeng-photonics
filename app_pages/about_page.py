@@ -1,4 +1,5 @@
 import streamlit as st
+from pathlib import Path
 
 st.header("About Photonics Helper")
 st.markdown("""
@@ -40,7 +41,6 @@ with st.expander("Equations", expanded=False):
         """
     )
 
-from pathlib import Path
 
 def read_py_file_pathlib(filename):
     """
@@ -48,7 +48,7 @@ def read_py_file_pathlib(filename):
     """
     try:
         # Create a Path object and use the read_text() method
-        file_content = Path(filename).read_text(encoding='utf-8')
+        file_content = Path(filename).read_text(encoding="utf-8")
         return file_content
     except FileNotFoundError:
         print(f"Error: The file '{filename}' was not found.")
@@ -57,9 +57,8 @@ def read_py_file_pathlib(filename):
         print(f"An error occurred while reading the file: {e}")
         return None
 
+
 code_string = read_py_file_pathlib("equations.py")
 
 with st.expander("Python Conversion functions", expanded=False):
-    st.code(
-        code_string
-    )
+    st.code(code_string)

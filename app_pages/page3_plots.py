@@ -2,8 +2,8 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
-from plots import dBm_vs_mW_plot, mW_vs_dBm_plot
-from photonic_units import (
+from johnfeng_photonics.plots import dBm_vs_mW_plot, mW_vs_dBm_plot
+from johnfeng_photonics.photonic_units import (
     Frequency,
     FrequencyUnit,
     PhotonicUnit,
