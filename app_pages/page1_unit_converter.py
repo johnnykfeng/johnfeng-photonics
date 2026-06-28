@@ -1,12 +1,6 @@
 import streamlit as st
 import tomllib
 
-from johnfeng_photonics.equations import (
-    dB_to_percent,
-    dBm_to_mW,
-    mW_to_dBm,
-    percent_to_dB,
-)
 from johnfeng_photonics.photonic_units import (
     AngularFrequencyUnit,
     Frequency,
@@ -15,6 +9,7 @@ from johnfeng_photonics.photonic_units import (
     Wavelength,
     WavelengthUnit,
 )
+from johnfeng_photonics.power_units import PowerUnit, TransmissionUnit
 
 st.set_page_config(page_title="Unit Converter", page_icon="🔢", layout="centered")
 
@@ -73,19 +68,19 @@ col3, col4 = st.columns(2)
 with col3:
     st.subheader("$T[dB] \\leftrightarrow T[\\%]$")
     db_input = st.number_input("$T[dB]$", value=0.0, step=0.1)
-    percent = dB_to_percent(db_input)
-    st.subheader(f"$T$ = {percent:.3f}%")
+    tu = TransmissionUnit(decibel=db_input)
+    st.subheader(f"$T$ = {tu.percent.value_unit:.{decimal_places}f}%")
 
     percent_input = st.number_input("$T[\\%]$", value=100.0, step=0.1)
-    db = percent_to_dB(percent_input)
-    st.subheader(f"$T[dB]$ = {db:.3f} dB")
+    tu = TransmissionUnit(percent=percent_input)
+    st.subheader(f"$T[dB]$ = {tu.decibel.value_unit:.{decimal_places}f} dB")
 
 with col4:
     st.subheader("$P[mW] \\leftrightarrow P[dBm]$")
     mw_input = st.number_input("Power (mW)", value=1.0, step=0.1)
-    dbm = mW_to_dBm(mw_input)
-    st.subheader(f"$P[dBm]$ = {dbm:.3f} dBm")
+    pu = PowerUnit(milliwatt=mw_input)
+    st.subheader(f"$P[dBm]$ = {pu.decibel_milliwatt.value_unit:.{decimal_places}f} dBm")
 
     dbm_input = st.number_input("Power (dBm)", value=0.0, step=0.1)
-    mw = dBm_to_mW(dbm_input)
-    st.subheader(f"$P[mW]$ = {mw:.3f} mW")
+    pu = PowerUnit(decibel_milliwatt=dbm_input)
+    st.subheader(f"$P[mW]$ = {pu.milliwatt.value_unit:.{decimal_places}f} mW")
