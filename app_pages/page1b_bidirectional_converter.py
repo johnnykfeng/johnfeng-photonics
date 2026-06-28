@@ -17,6 +17,7 @@ with open("defaults.toml", "rb") as f:
 FREQ_UNITS = ["MHz", "GHz", "THz"]
 WVL_UNITS = ["fm", "pm", "nm", "um"]
 
+st.caption("Last updated: 2026-06-28")
 
 def _refresh_from_hz() -> PhotonicUnit:
     """Update both input fields from the canonical frequency in Hz."""

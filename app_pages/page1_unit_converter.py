@@ -16,6 +16,8 @@ st.set_page_config(page_title="Unit Converter", page_icon="🔢", layout="center
 with open("defaults.toml", "rb") as f:
     defaults = tomllib.load(f)
 
+st.caption("Last updated: 2026-06-27")
+
 st.header("Unit Converter")
 st.divider()
 st.subheader("$f \\leftrightarrow \\lambda$")
