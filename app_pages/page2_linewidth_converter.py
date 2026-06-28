@@ -1,7 +1,7 @@
 import streamlit as st
 import tomllib
 
-from johnfeng_photonics.equations import linewidth_freq_to_wvl, linewidth_wvl_to_freq
+from johnfeng_photonics.linewidth_units import LinewidthUnit
 from johnfeng_photonics.photonic_units import (
     Frequency,
     FrequencyUnit,
@@ -14,6 +14,8 @@ with open("defaults.toml", "rb") as f:
 
 FREQ_UNITS = ["MHz", "GHz", "THz"]
 WVL_UNITS = ["fm", "pm", "nm", "um"]
+
+st.caption("Last updated: 2026-06-28")
 
 with st.sidebar:
     decimal_places = st.slider("Decimal Places", min_value=0, max_value=6, value=6, step=1)
@@ -95,18 +97,19 @@ with col1:
 
     freq_unit_enum = FrequencyUnit(freq_unit)
     center_wavelength_unit_enum = WavelengthUnit(center_wavelength_unit_1)
-    linewidth_freq = Frequency(
-        value_si=linewidth_freq_input * freq_unit_enum.si_factor,
-        unit=freq_unit_enum,
+    linewidth = LinewidthUnit(
+        frequency=Frequency(
+            value_si=linewidth_freq_input * freq_unit_enum.si_factor,
+            unit=freq_unit_enum,
+        ),
+        center_wavelength=Wavelength(
+            value_si=center_wavelength_input * center_wavelength_unit_enum.si_factor,
+            unit=center_wavelength_unit_enum,
+        ),
     )
-    center_wavelength = Wavelength(
-        value_si=center_wavelength_input * center_wavelength_unit_enum.si_factor,
-        unit=center_wavelength_unit_enum,
-    )
-    linewidth_wvl = linewidth_freq_to_wvl(linewidth_freq, center_wavelength)
-    linewidth_wvl.unit = WavelengthUnit(linewidth_wvl_unit_1)
+    linewidth.wavelength.unit = WavelengthUnit(linewidth_wvl_unit_1)
     st.subheader(
-        f"$\\Delta \\lambda$ = {linewidth_wvl.value_unit:.{decimal_places}f} {linewidth_wvl.unit.value}"
+        f"$\\Delta \\lambda$ = {linewidth.wavelength.value_unit:.{decimal_places}f} {linewidth.wavelength.unit.value}"
     )
 
 with col2:
@@ -127,19 +130,17 @@ with col2:
 
     linewidth_wvl_unit_enum = WavelengthUnit(linewidth_wvl_unit_2)
     center_wavelength_unit_enum = WavelengthUnit(center_wavelength_unit_2)
-    linewidth_wvl = Wavelength(
-        value_si=linewidth_wvl_input * linewidth_wvl_unit_enum.si_factor,
-        unit=linewidth_wvl_unit_enum,
+    linewidth = LinewidthUnit(
+        wavelength=Wavelength(
+            value_si=linewidth_wvl_input * linewidth_wvl_unit_enum.si_factor,
+            unit=linewidth_wvl_unit_enum,
+        ),
+        center_wavelength=Wavelength(
+            value_si=center_wavelength_input * center_wavelength_unit_enum.si_factor,
+            unit=center_wavelength_unit_enum,
+        ),
     )
-    center_wavelength = Wavelength(
-        value_si=center_wavelength_input * center_wavelength_unit_enum.si_factor,
-        unit=center_wavelength_unit_enum,
-    )
-    linewidth_freq = linewidth_wvl_to_freq(
-        linewidth_wvl,
-        center_wavelength,
-        freq_unit=FrequencyUnit(freq_unit_2),
-    )
+    linewidth.frequency.unit = FrequencyUnit(freq_unit_2)
     st.subheader(
-        f"$\\Delta \\nu$ = {linewidth_freq.value_unit:.{decimal_places}f} {linewidth_freq.unit.value}"
+        f"$\\Delta \\nu$ = {linewidth.frequency.value_unit:.{decimal_places}f} {linewidth.frequency.unit.value}"
     )
