@@ -2,6 +2,8 @@
 
 A Streamlit app with photonics calculators and simulations: unit converters, linewidth tools, plots, ring resonator models, PID locking, and more.
 
+A **React frontend alternative** is also available under `frontend/` with a FastAPI backend in `api/`. It currently implements the About page, Unit Converter, and Linewidth Converter while reusing the same Python calculation library as Streamlit.
+
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/) — fast Python package and project manager
@@ -87,6 +89,53 @@ source .venv/bin/activate   # Linux / macOS
 streamlit run streamlit_app/app.py
 ```
 
+## React frontend (alternative)
+
+The React app is a modern UI alternative to Streamlit. It calls a FastAPI backend that imports the same `johnfeng_photonics` library, so conversion results stay consistent with the Streamlit app.
+
+### Prerequisites
+
+- Python **3.12** with [uv](https://docs.astral.sh/uv/) (same as above)
+- **Node.js 18+** (Node 20+ recommended) and npm
+
+### Install backend dependencies
+
+Install the optional API extra (FastAPI + Uvicorn):
+
+```bash
+uv sync --extra api
+```
+
+### Run the API backend
+
+From the project root:
+
+```bash
+uv run uvicorn api.main:app --reload --port 8000
+```
+
+The API serves endpoints under `/api/` (health check at `/api/health`).
+
+### Run the React frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the URL Vite prints (typically `http://localhost:5173`). The dev server proxies `/api` requests to the backend on port 8000.
+
+### Build the frontend for production
+
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
 ## Run tests
 
 ```bash
@@ -108,6 +157,8 @@ uv sync
 |------------------|---------|
 | `streamlit_app/app.py` | Streamlit entry point |
 | `streamlit_app/` | Streamlit multipage app scripts |
+| `api/` | FastAPI backend for the React frontend |
+| `frontend/` | Vite + React + TypeScript + Tailwind SPA |
 | `src/johnfeng_photonics/` | Installable library (units, equations, plots, PID modules) |
 | `pyproject.toml` | Project metadata and dependencies |
 | `uv.lock` | Locked dependency versions |
