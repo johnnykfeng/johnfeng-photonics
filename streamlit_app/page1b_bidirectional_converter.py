@@ -155,9 +155,9 @@ with st.sidebar:
     )
     step_size = float(step_size)
 
-col1, col2 = st.columns(2)
+wvl_col, freq_col = st.columns(2)
 
-with col1:
+with freq_col:
     st.radio(
         "Frequency Unit",
         FREQ_UNITS,
@@ -172,9 +172,10 @@ with col1:
         key="bidi_freq_input",
         on_change=_sync_from_freq,
         format=f"%.{decimal_places}f",
+        min_value=0.0,
     )
 
-with col2:
+with wvl_col:
     st.radio(
         "Wavelength Unit",
         WVL_UNITS,
@@ -189,6 +190,7 @@ with col2:
         key="bidi_wavelength_input",
         on_change=_sync_from_wavelength,
         format=f"%.{decimal_places}f",
+        min_value=0.0,
     )
 
 freq_unit_enum = FrequencyUnit(st.session_state.bidi_freq_unit)
@@ -205,12 +207,12 @@ pu.angular_frequency.unit = AngularFrequencyUnit.RAD_PER_SEC
 freq_unit = st.session_state.bidi_freq_unit
 wavelength_unit = st.session_state.bidi_wavelength_unit
 
-with col1:
+with wvl_col:
     st.subheader(
         f"$\\lambda$ = {pu.wavelength.value_unit:.{decimal_places}f} {wavelength_unit}"
     )
 
-with col2:
+with freq_col:
     st.subheader(f"$f$ = {pu.frequency.value_unit:.{decimal_places}f} {freq_unit}")
     omega_sci = f"{pu.angular_frequency.value_unit:.{decimal_places}e}"
     st.subheader(f"$\\omega$ = {omega_sci} {pu.angular_frequency.unit.value}")
@@ -221,18 +223,21 @@ st.caption(
     "Edit transmission in dB or percent — the other field updates to stay in sync."
 )
 
-col3, col4 = st.columns(2)
+col_T_db, col_T_percent = st.columns(2)
 
-with col3:
+with col_T_percent:
     st.number_input(
         "$T[\\%]$",
         step=step_size,
         key="bidi_percent_input",
         on_change=_sync_from_transmission_percent,
-        format=f"%.{decimal_places}f",
+        min_value=0.0,
+        format=f"%.{decimal_places}e" \
+            if _refresh_from_transmission_db().percent.value_unit < 0.001 \
+            else f"%.{decimal_places}f",
     )
 
-with col4:
+with col_T_db:
     st.number_input(
         "$T[dB]$",
         step=step_size,
@@ -243,29 +248,31 @@ with col4:
 
 tu = TransmissionUnit(decibel=st.session_state.bidi_transmission_db)
 
-with col3:
+with col_T_db:
     st.subheader(f"$T[dB]$ = {tu.decibel.value_unit:.{decimal_places}f} dB")
 
-with col4:
+with col_T_percent:
     st.subheader(f"$T$ = {tu.percent.value_unit:.{decimal_places}f}%")
 
 st.divider()
-st.header("$P[mW] \\leftrightarrow P[dBm]$ Converter")
+st.header("$P[dBm] \\leftrightarrow P[mW]$ Converter")
 st.caption("Edit power in mW or dBm — the other field updates to stay in sync.")
 
-col5, col6 = st.columns(2)
+col_P_dbm, col_P_mw = st.columns(2)
 
-with col5:
+with col_P_mw:
     st.number_input(
         "Power (mW)",
         min_value=0.0,
         step=step_size,
         key="bidi_mw_input",
         on_change=_sync_from_milliwatt,
-        format=f"%.{max(decimal_places, 5)}e",
+        format=f"%.{decimal_places}e" \
+            if _refresh_from_power_dbm().milliwatt.value_unit < 0.001 \
+            else f"%.{decimal_places}f",
     )
 
-with col6:
+with col_P_dbm:
     st.number_input(
         "Power (dBm)",
         step=step_size,
@@ -276,10 +283,10 @@ with col6:
 
 pu_power = PowerUnit(decibel_milliwatt=st.session_state.bidi_power_dbm)
 
-with col5:
+with col_P_dbm:
     st.subheader(
         f"$P[dBm]$ = {pu_power.decibel_milliwatt.value_unit:.{decimal_places}f} dBm"
     )
 
-with col6:
+with col_P_mw:
     st.subheader(f"$P[mW]$ = {pu_power.milliwatt.value_unit:.{decimal_places}f} mW")
