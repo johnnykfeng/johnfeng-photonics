@@ -71,7 +71,7 @@ uv sync
 With the environment set up, start Streamlit via `uv run` (no manual activation required):
 
 ```bash
-uv run streamlit run app.py
+uv run streamlit run streamlit_app/app.py
 ```
 
 Streamlit prints a local URL (typically `http://localhost:8501`) — open it in your browser.
@@ -84,7 +84,7 @@ If you want an interactive shell inside the project environment:
 source .venv/bin/activate   # Linux / macOS
 # .venv\Scripts\activate    # Windows
 
-streamlit run app.py
+streamlit run streamlit_app/app.py
 ```
 
 ## Run tests
@@ -106,8 +106,8 @@ uv sync
 
 | File / directory | Purpose |
 |------------------|---------|
-| `app.py` | Streamlit entry point |
-| `app_pages/` | Streamlit multipage app scripts |
+| `streamlit_app/app.py` | Streamlit entry point |
+| `streamlit_app/` | Streamlit multipage app scripts |
 | `src/johnfeng_photonics/` | Installable library (units, equations, plots, PID modules) |
 | `pyproject.toml` | Project metadata and dependencies |
 | `uv.lock` | Locked dependency versions |

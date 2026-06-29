@@ -1,5 +1,6 @@
-import streamlit as st
 import tomllib
+
+import streamlit as st
 
 from johnfeng_photonics.photonic_units import (
     AngularFrequencyUnit,
@@ -18,6 +19,7 @@ FREQ_UNITS = ["MHz", "GHz", "THz"]
 WVL_UNITS = ["fm", "pm", "nm", "um"]
 
 st.caption("Last updated: 2026-06-28")
+
 
 def _refresh_from_hz() -> PhotonicUnit:
     """Update both input fields from the canonical frequency in Hz."""
@@ -47,9 +49,7 @@ def _sync_from_wavelength() -> None:
     wvl_unit_enum = WavelengthUnit(st.session_state.bidi_wavelength_unit)
     wvl_si = st.session_state.bidi_wavelength_input * wvl_unit_enum.si_factor
     freq_unit_enum = FrequencyUnit(st.session_state.bidi_freq_unit)
-    pu = PhotonicUnit(
-        wavelength=Wavelength(value_si=wvl_si, unit=wvl_unit_enum)
-    )
+    pu = PhotonicUnit(wavelength=Wavelength(value_si=wvl_si, unit=wvl_unit_enum))
     pu.frequency.unit = freq_unit_enum
     st.session_state.bidi_freq_hz = pu.frequency.value_si
     st.session_state.bidi_freq_input = pu.frequency.value_unit
@@ -104,6 +104,10 @@ def _sync_from_dbm() -> None:
     _refresh_from_power_dbm()
 
 
+if "bidi_freq_unit" not in st.session_state:
+    st.session_state.bidi_freq_unit = FREQ_UNITS[1]
+if "bidi_wavelength_unit" not in st.session_state:
+    st.session_state.bidi_wavelength_unit = WVL_UNITS[2]
 if "bidi_freq_hz" not in st.session_state:
     pu_init = PhotonicUnit(
         wavelength=Wavelength(
@@ -112,8 +116,8 @@ if "bidi_freq_hz" not in st.session_state:
         )
     )
     st.session_state.bidi_freq_hz = pu_init.frequency.value_si
-    pu_init.frequency.unit = FrequencyUnit.GIGAHERTZ
-    pu_init.wavelength.unit = WavelengthUnit.NANOMETER
+    pu_init.frequency.unit = FrequencyUnit(st.session_state.bidi_freq_unit)
+    pu_init.wavelength.unit = WavelengthUnit(st.session_state.bidi_wavelength_unit)
     st.session_state.bidi_freq_input = pu_init.frequency.value_unit
     st.session_state.bidi_wavelength_input = pu_init.wavelength.value_unit
 
@@ -129,10 +133,8 @@ if "bidi_power_dbm" not in st.session_state:
     st.session_state.bidi_mw_input = pu_init.milliwatt.value_unit
     st.session_state.bidi_dbm_input = pu_init.decibel_milliwatt.value_unit
 
-st.header("Bidirectional $f \\leftrightarrow \\lambda$ Converter")
-st.caption(
-    "Edit frequency or wavelength — the other field updates to stay in sync."
-)
+st.header("$f \\leftrightarrow \\lambda$ Converter")
+st.caption("Edit frequency or wavelength — the other field updates to stay in sync.")
 st.divider()
 
 with st.sidebar:
@@ -209,14 +211,12 @@ with col1:
     )
 
 with col2:
-    st.subheader(
-        f"$f$ = {pu.frequency.value_unit:.{decimal_places}f} {freq_unit}"
-    )
+    st.subheader(f"$f$ = {pu.frequency.value_unit:.{decimal_places}f} {freq_unit}")
     omega_sci = f"{pu.angular_frequency.value_unit:.{decimal_places}e}"
     st.subheader(f"$\\omega$ = {omega_sci} {pu.angular_frequency.unit.value}")
 
 st.divider()
-st.header("Bidirectional $T[dB] \\leftrightarrow T[\\%]$ Converter")
+st.header("$T[dB] \\leftrightarrow T[\\%]$ Converter")
 st.caption(
     "Edit transmission in dB or percent — the other field updates to stay in sync."
 )
@@ -225,15 +225,6 @@ col3, col4 = st.columns(2)
 
 with col3:
     st.number_input(
-        "$T[dB]$",
-        step=step_size,
-        key="bidi_db_input",
-        on_change=_sync_from_transmission_db,
-        format=f"%.{decimal_places}f",
-    )
-
-with col4:
-    st.number_input(
         "$T[\\%]$",
         step=step_size,
         key="bidi_percent_input",
@@ -241,33 +232,37 @@ with col4:
         format=f"%.{decimal_places}f",
     )
 
+with col4:
+    st.number_input(
+        "$T[dB]$",
+        step=step_size,
+        key="bidi_db_input",
+        on_change=_sync_from_transmission_db,
+        format=f"%.{decimal_places}f",
+    )
+
 tu = TransmissionUnit(decibel=st.session_state.bidi_transmission_db)
 
 with col3:
-    st.subheader(
-        f"$T$ = {tu.percent.value_unit:.{decimal_places}f}%"
-    )
+    st.subheader(f"$T[dB]$ = {tu.decibel.value_unit:.{decimal_places}f} dB")
 
 with col4:
-    st.subheader(
-        f"$T[dB]$ = {tu.decibel.value_unit:.{decimal_places}f} dB"
-    )
+    st.subheader(f"$T$ = {tu.percent.value_unit:.{decimal_places}f}%")
 
 st.divider()
-st.header("Bidirectional $P[mW] \\leftrightarrow P[dBm]$ Converter")
-st.caption(
-    "Edit power in mW or dBm — the other field updates to stay in sync."
-)
+st.header("$P[mW] \\leftrightarrow P[dBm]$ Converter")
+st.caption("Edit power in mW or dBm — the other field updates to stay in sync.")
 
 col5, col6 = st.columns(2)
 
 with col5:
     st.number_input(
         "Power (mW)",
+        min_value=0.0,
         step=step_size,
         key="bidi_mw_input",
         on_change=_sync_from_milliwatt,
-        format=f"%.{decimal_places}f",
+        format=f"%.{max(decimal_places, 5)}e",
     )
 
 with col6:
@@ -287,6 +282,4 @@ with col5:
     )
 
 with col6:
-    st.subheader(
-        f"$P[mW]$ = {pu_power.milliwatt.value_unit:.{decimal_places}f} mW"
-    )
+    st.subheader(f"$P[mW]$ = {pu_power.milliwatt.value_unit:.{decimal_places}f} mW")
