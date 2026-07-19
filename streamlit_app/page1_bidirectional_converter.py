@@ -190,7 +190,7 @@ with wvl_col:
         key="bidi_wavelength_input",
         on_change=_sync_from_wavelength,
         format=f"%.{decimal_places}f",
-        min_value=0.0,
+        min_value=0.100,
     )
 
 freq_unit_enum = FrequencyUnit(st.session_state.bidi_freq_unit)
