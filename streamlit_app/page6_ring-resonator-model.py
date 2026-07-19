@@ -98,7 +98,20 @@ with st.sidebar:
 
     # Plot appearance
     st.markdown("### Plot Appearance")
-    plot_bgcolor = st.color_picker("Plot background color", value="#0E1117")
+    plotly_theme = st.selectbox(
+        "Plotly theme",
+        options=[
+            "plotly_dark",
+            "plotly_white",
+            "plotly",
+            "ggplot2",
+            "seaborn",
+            "simple_white",
+            "presentation",
+            "none",
+        ],
+        index=0,
+    )
 
 # Generate frequency offset range for plotting
 f_offset = np.linspace(f_offset_min, f_offset_max, number_of_points)  # GHz (f - f₀)
@@ -387,17 +400,15 @@ with col1:
         title=plot_title,
         xaxis_title=xaxis_title,
         yaxis_title="Transmission",
-        template="plotly_white",
+        template=plotly_theme,
         height=500,
-        paper_bgcolor=plot_bgcolor,
-        plot_bgcolor=plot_bgcolor,
-        xaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
-        yaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
+        xaxis=dict(showgrid=True, gridwidth=1, griddash="dash"),
+        yaxis=dict(showgrid=True, gridwidth=1, griddash="dash"),
         yaxis_range=[T_min, T_max],
         # legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
     st.subheader("Quality Factors")
