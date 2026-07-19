@@ -2,6 +2,14 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
+from johnfeng_photonics.photonic_units import (
+    Frequency,
+    FrequencyUnit,
+    PhotonicUnit,
+    Wavelength,
+    WavelengthUnit,
+)
+
 st.set_page_config(page_title="Ring Resonator Model", page_icon="🔄", layout="wide")
 
 st.title("Ring Resonator Model")
@@ -87,6 +95,10 @@ with st.sidebar:
     st.markdown("### Insertion Loss")
     IL_t = st.slider("IL_t (Transmission insertion loss)", 0.5, 1.0, 1.0, 0.01)
     IL_r = st.slider("IL_r (Reflection insertion loss)", 0.5, 1.0, 1.0, 0.01)
+
+    # Plot appearance
+    st.markdown("### Plot Appearance")
+    plot_bgcolor = st.color_picker("Plot background color", value="#0E1117")
 
 # Generate frequency offset range for plotting
 f_offset = np.linspace(f_offset_min, f_offset_max, number_of_points)  # GHz (f - f₀)
@@ -238,9 +250,9 @@ col1, col2 = st.columns([3, 1])
 
 with col1:
     st.subheader("Transmission (T_full)")
-    toggle_cols = st.columns(5)
+    toggle_cols = st.columns(6)
     with toggle_cols[0]:
-        dB_toggle = st.checkbox("Show in dB", value=False)
+        dB_toggle = st.checkbox("Show in dB", value=True)
     with toggle_cols[1]:
         include_T_fp = st.checkbox("Include Fabry-Pérot", value=False)
     with toggle_cols[2]:
@@ -249,6 +261,38 @@ with col1:
         include_T_plus = st.checkbox("Include T_plus", value=False)
     with toggle_cols[4]:
         include_R_full = st.checkbox("Include R_full", value=False)
+    with toggle_cols[5]:
+        wavelength_x_axis = st.checkbox(
+            "X-axis: Wavelength",
+            value=False,
+            help="Plot against absolute wavelength (nm) instead of frequency offset (GHz)",
+        )
+
+    if wavelength_x_axis:
+        resonance_pu = PhotonicUnit(
+            wavelength=Wavelength(
+                value_si=RESONANCE_WAVELENGTH * WavelengthUnit.NANOMETER.si_factor,
+                unit=WavelengthUnit.NANOMETER,
+            )
+        )
+        f_abs_hz = resonance_pu.frequency.value_si + f_offset * FrequencyUnit.GIGAHERTZ.si_factor
+        x_values_pu = PhotonicUnit(
+            frequency=Frequency(value_si=f_abs_hz, unit=FrequencyUnit.HERTZ)
+        )
+        x_values_pu.wavelength.unit = WavelengthUnit.NANOMETER
+        x_values = x_values_pu.wavelength.value_unit
+        xaxis_title = "Wavelength [nm]"
+        plot_title = "Transmission vs Wavelength"
+        hover_x_label = "Wavelength"
+        hover_x_unit = "nm"
+        hover_x_fmt = ".6f"
+    else:
+        x_values = f_offset
+        xaxis_title = "Frequency Offset (f - f₀) [GHz]"
+        plot_title = "Transmission vs Frequency Offset"
+        hover_x_label = "Frequency offset"
+        hover_x_unit = "GHz"
+        hover_x_fmt = ".3f"
 
     if dB_toggle:
         T_full = 10 * np.log10(T_full)
@@ -285,7 +329,7 @@ with col1:
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=f_offset,
+            x=x_values,
             y=T_full,
             mode="lines",
             line=dict(color="blue", width=2),
@@ -295,7 +339,7 @@ with col1:
     if include_T_fp:
         fig.add_trace(
             go.Scatter(
-                x=f_offset,
+                x=x_values,
                 y=T_fp,
                 mode="lines",
                 line=dict(color="red", width=2),
@@ -305,7 +349,7 @@ with col1:
     if include_T_minus:
         fig.add_trace(
             go.Scatter(
-                x=f_offset,
+                x=x_values,
                 y=T_minus,
                 mode="lines",
                 line=dict(color="green", width=2, dash="dash"),
@@ -315,7 +359,7 @@ with col1:
     if include_T_plus:
         fig.add_trace(
             go.Scatter(
-                x=f_offset,
+                x=x_values,
                 y=T_plus,
                 mode="lines",
                 line=dict(color="orange", width=2, dash="dash"),
@@ -325,7 +369,7 @@ with col1:
     if include_R_full:
         fig.add_trace(
             go.Scatter(
-                x=f_offset,
+                x=x_values,
                 y=R_full,
                 mode="lines",
                 line=dict(color="purple", width=2),
@@ -333,15 +377,20 @@ with col1:
             )
         )
     fig.update_traces(
-        hovertemplate="Frequency offset: %{x:.3f} GHz<br>Transmission: %{y:.6f}<extra></extra>"
+        hovertemplate=(
+            f"{hover_x_label}: %{{x:{hover_x_fmt}}} {hover_x_unit}"
+            "<br>Transmission: %{y:.6f}<extra></extra>"
+        )
     )
 
     fig.update_layout(
-        title="Transmission vs Frequency Offset",
-        xaxis_title="Frequency Offset (f - f₀) [GHz]",
+        title=plot_title,
+        xaxis_title=xaxis_title,
         yaxis_title="Transmission",
         template="plotly_white",
         height=500,
+        paper_bgcolor=plot_bgcolor,
+        plot_bgcolor=plot_bgcolor,
         xaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
         yaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
         yaxis_range=[T_min, T_max],
@@ -419,14 +468,14 @@ with st.expander("Model Information", expanded=False):
     - $A_t = IL_t (1-r^2)^2 t_fp^4$
 
     **Parameters:**
-    - **$a$**: Ring transmission magnitude ($|a_{\pm}| = \\sqrt{\\tau^2 + |\\rho|^2}$)
-    - **$\sigma$**: Coupler transmission coefficient
-    - **$f_{split}$**: Splitting distance ($\Delta f$) between Lorentzian peaks, used to calculate $\\phi_a = \\pi \\times (f_{split} / FSR_{ring})$
+    - **$a$**: Ring transmission magnitude ($|a_{\\pm}| = \\sqrt{\\tau^2 + |\\rho|^2}$)
+    - **$\\sigma$**: Coupler transmission coefficient
+    - **$f_{split}$**: Splitting distance ($\\Delta f$) between Lorentzian peaks, used to calculate $\\phi_a = \\pi \\times (f_{split} / FSR_{ring})$
     - **$FSR_{ring}$**: Free spectral range of the ring
     - **$FSR_{fp}$**: Free spectral range of the Fabry-Pérot cavity
     - **$r$**: Facet reflectivity
     - **$t_{fp}$**: Fabry-Pérot transmission coefficient
-    - **$\delta$**: Phase difference ($\phi_d + \phi_e$)
+    - **$\\delta$**: Phase difference ($\\phi_d + \\phi_e$)
     - **$IL_t$**: Transmission insertion loss
     - **$IL_r$**: Reflection insertion loss
     """)
