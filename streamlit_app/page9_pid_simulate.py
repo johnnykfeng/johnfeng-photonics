@@ -96,7 +96,7 @@ fig.update_layout(
     xaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
     yaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
 )
-st.plotly_chart(fig, width='stretch')
+st.plotly_chart(fig, use_container_width=True)
 
 # col1, col2 = st.columns(2)
 
@@ -116,7 +116,7 @@ fig_heater.update_layout(
     xaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
     yaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
 )
-st.plotly_chart(fig_heater, width='stretch')
+st.plotly_chart(fig_heater, use_container_width=True)
 
 # with col2:
 fig_error = go.Figure()
@@ -135,7 +135,7 @@ fig_error.update_layout(
     xaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
     yaxis=dict(showgrid=True, gridwidth=1, gridcolor="lightgray", griddash="dash"),
 )
-st.plotly_chart(fig_error, width='stretch')
+st.plotly_chart(fig_error, use_container_width=True)
 
 with st.expander("Simulation Metrics"):
     steady_state = temp_hist[-num_steps // 4:]
