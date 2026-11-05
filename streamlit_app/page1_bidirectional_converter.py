@@ -1,4 +1,5 @@
 import tomllib
+from pathlib import Path
 
 import streamlit as st
 
@@ -12,7 +13,9 @@ from johnfeng_photonics.photonic_units import (
 )
 from johnfeng_photonics.power_units import PowerUnit, TransmissionUnit
 
-with open("defaults.toml", "rb") as f:
+_DEFAULTS_PATH = Path(__file__).resolve().parents[1] / "defaults.toml"
+
+with open(_DEFAULTS_PATH, "rb") as f:
     defaults = tomllib.load(f)
 
 FREQ_UNITS = ["MHz", "GHz", "THz"]
