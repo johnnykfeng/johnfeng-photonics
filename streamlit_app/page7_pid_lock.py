@@ -14,6 +14,7 @@ import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from matplotlib.animation import FuncAnimation
+import johnfeng_photonics.pid_lock_module as pid_lock_module
 from johnfeng_photonics.pid_lock_module import cavity_transmission, create_simulation, animate_s_curve
 import matplotlib
 
@@ -479,7 +480,7 @@ if create_s_curve_anim_btn or simulate_all_btn:
 
 st.divider()
 
-with open("pid_lock_module.py", "r") as f:
+with open(pid_lock_module.__file__, encoding="utf-8") as f:
     code_display = f.read()
 with st.expander(label="`pid_lock_module.py`", expanded=False):
     st.code(code_display, language="python")
