@@ -6,7 +6,6 @@ linewidth_converter_page = st.Page("page2_linewidth_converter.py", title="Linewi
 plots_page = st.Page("page3_plots.py", title="Plots", icon="📈")
 tables_page = st.Page("page4_tables.py", title="Tables", icon="📊")
 parquet_loader_page = st.Page("page5_parquet_loader.py", title="Parquet Loader", icon="📋")
-ring_resonator_page = st.Page("page6_ring-resonator-model.py", title="Ring Resonator Model", icon="🔄")
 pid_lock_page = st.Page("page7_pid_lock.py", title="PID Locking Simulation", icon="🖥️")
 page8 = st.Page("page8_searching_lock_parameters.py", title="Searching Lock Parameters", icon="🔍")
 pid_simulate_page = st.Page("page9_pid_simulate.py", title="PID Temperature Sim", icon="🌡️")
@@ -19,7 +18,6 @@ pg = st.navigation([
     plots_page,
     tables_page,
     parquet_loader_page,
-    ring_resonator_page,
     pid_lock_page,
     page8,
     pid_simulate_page,

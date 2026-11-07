@@ -1,6 +1,6 @@
 # johnfeng-photonics
 
-A Streamlit app with photonics calculators and simulations: unit converters, linewidth tools, plots, ring resonator models, PID locking, and more.
+A Streamlit app with photonics calculators and simulations: unit converters, linewidth tools, plots, PID locking, and more.
 
 A **React frontend alternative** is also available under `frontend/` with a FastAPI backend in `api/`. It currently implements the About page, Unit Converter, and Linewidth Converter while reusing the same Python calculation library as Streamlit.
 
