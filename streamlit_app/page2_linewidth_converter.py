@@ -17,9 +17,71 @@ with open(_DEFAULTS_PATH, "rb") as f:
     defaults = tomllib.load(f)
 
 FREQ_UNITS = ["MHz", "GHz", "THz"]
-WVL_UNITS = ["fm", "pm", "nm", "um"]
+WVL_UNITS = ["fm", "pm", "nm"]
+PM_LINEWIDTHS = (0.1, 1.0, 10.0, 100.0)
+NM_LINEWIDTHS = (1.0, 10.0, 100.0, 1000.0)
+MHZ_LINEWIDTHS = (0.1, 1.0, 10.0, 100.0)
+GHZ_LINEWIDTHS = (1.0, 10.0, 100.0, 1000.0)
 
-st.caption("Last updated: 2026-06-28")
+
+def wavelength_linewidths_to_frequency(
+    linewidths: tuple[float, ...],
+    linewidth_unit: WavelengthUnit,
+    center_wavelength: Wavelength,
+) -> list[dict[str, float]]:
+    """Convert fixed wavelength linewidths to frequency at a center wavelength."""
+    rows = []
+    for linewidth_value in linewidths:
+        converted = LinewidthUnit(
+            wavelength=Wavelength(
+                value_si=linewidth_value * linewidth_unit.si_factor,
+                unit=linewidth_unit,
+            ),
+            center_wavelength=center_wavelength,
+        )
+        row = {f"Linewidth ({linewidth_unit.value})": linewidth_value}
+        for unit_name in FREQ_UNITS:
+            converted.frequency.unit = FrequencyUnit(unit_name)
+            row[f"Frequency ({unit_name})"] = float(converted.frequency.value_unit)
+        rows.append(row)
+    return rows
+
+
+def frequency_linewidths_to_wavelength(
+    linewidths: tuple[float, ...],
+    linewidth_unit: FrequencyUnit,
+    center_wavelength: Wavelength,
+) -> list[dict[str, float]]:
+    """Convert fixed frequency linewidths to wavelength at a center wavelength."""
+    rows = []
+    for linewidth_value in linewidths:
+        converted = LinewidthUnit(
+            frequency=Frequency(
+                value_si=linewidth_value * linewidth_unit.si_factor,
+                unit=linewidth_unit,
+            ),
+            center_wavelength=center_wavelength,
+        )
+        row = {f"Linewidth ({linewidth_unit.value})": linewidth_value}
+        for unit_name in WVL_UNITS:
+            converted.wavelength.unit = WavelengthUnit(unit_name)
+            row[f"Wavelength ({unit_name})"] = float(converted.wavelength.value_unit)
+        rows.append(row)
+    return rows
+
+
+def show_conversion_table(rows: list[dict[str, float]], decimal_places: int) -> None:
+    """Render a linewidth reference table using the sidebar decimal format."""
+    column_config = {
+        column: st.column_config.NumberColumn(
+            format="%g" if column.startswith("Linewidth") else f"%.{decimal_places}f",
+        )
+        for column in rows[0]
+    }
+    st.dataframe(rows, hide_index=True, column_config=column_config)
+
+
+st.caption("Last updated: 2026-11-07")
 
 with st.sidebar:
     decimal_places = st.slider("Decimal Places", min_value=0, max_value=6, value=6, step=1)
@@ -115,6 +177,23 @@ with col1:
     st.subheader(
         f"$\\Delta \\lambda$ = {linewidth.wavelength.value_unit:.{decimal_places}f} {linewidth.wavelength.unit.value}"
     )
+    st.caption("Reference conversions at this center wavelength")
+    show_conversion_table(
+        frequency_linewidths_to_wavelength(
+            MHZ_LINEWIDTHS,
+            FrequencyUnit.MEGAHERTZ,
+            linewidth.center_wavelength,
+        ),
+        decimal_places,
+    )
+    show_conversion_table(
+        frequency_linewidths_to_wavelength(
+            GHZ_LINEWIDTHS,
+            FrequencyUnit.GIGAHERTZ,
+            linewidth.center_wavelength,
+        ),
+        decimal_places,
+    )
 
 with col2:
     st.subheader("$\\Delta \\nu\\ = \\frac{c}{\\lambda_0^2} \\Delta \\lambda$")
@@ -147,4 +226,21 @@ with col2:
     linewidth.frequency.unit = FrequencyUnit(freq_unit_2)
     st.subheader(
         f"$\\Delta \\nu$ = {linewidth.frequency.value_unit:.{decimal_places}f} {linewidth.frequency.unit.value}"
+    )
+    st.caption("Reference conversions at this center wavelength")
+    show_conversion_table(
+        wavelength_linewidths_to_frequency(
+            PM_LINEWIDTHS,
+            WavelengthUnit.PICOMETER,
+            linewidth.center_wavelength,
+        ),
+        decimal_places,
+    )
+    show_conversion_table(
+        wavelength_linewidths_to_frequency(
+            NM_LINEWIDTHS,
+            WavelengthUnit.NANOMETER,
+            linewidth.center_wavelength,
+        ),
+        decimal_places,
     )
