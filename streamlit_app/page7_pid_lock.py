@@ -76,7 +76,18 @@ def animation_to_mp4_bytes(anim, fps, dpi):
         return tmp.read()
 
 
-def build_s_curve_animation(p):
+def _s_curve_figure(p):
+    """Build the S-curve figure and the function that draws one sweep step.
+
+    Args:
+        p: Simulation parameter dictionary.
+
+    Returns:
+        fig: Matplotlib figure with the three S-curve panels.
+        draw_frame: Callable that draws sweep index ``i``.
+        last_index: Index of the final sweep sample.
+        frames: Sweep indices played by the animation.
+    """
     f_sweep, t_fast, error_signal = animate_s_curve(p)
     transmission_curve = cavity_transmission(
         f_sweep, p["cavity_center"], p["cavity_fwhm"], p["cavity_port"]
@@ -206,14 +217,48 @@ def build_s_curve_animation(p):
             error_pt,
         )
 
+    return fig, update, len(f_sweep) - 1, frames
+
+
+def build_s_curve_animation(p):
+    """Build the matplotlib FuncAnimation of the dither S-curve.
+
+    Args:
+        p: Simulation parameter dictionary.
+    """
+    fig, draw_frame, _last_index, frames = _s_curve_figure(p)
     anim = FuncAnimation(
-        fig, update, frames=frames, interval=1000 / p["fps"], blit=False
+        fig, draw_frame, frames=frames, interval=1000 / p["fps"], blit=False
     )
     return fig, anim
 
 
-def build_animation(p):
-    """Build the matplotlib FuncAnimation for the given parameters."""
+def build_s_curve_final_plot(p):
+    """Draw the finished S-curve figure without rendering animation frames.
+
+    The curves include every sweep sample, and the markers sit on the final
+    detuning. That is the state the animation reaches at the end of the sweep.
+
+    Args:
+        p: Simulation parameter dictionary.
+    """
+    fig, draw_frame, last_index, _frames = _s_curve_figure(p)
+    draw_frame(last_index)
+    return fig
+
+
+def _lock_figure(p):
+    """Build the dither-lock figure and the function that draws one time step.
+
+    Args:
+        p: Simulation parameter dictionary.
+
+    Returns:
+        fig: Matplotlib figure with the three dither-lock panels.
+        draw_frame: Callable that draws time index ``i``.
+        last_index: Index of the final time sample.
+        frames: Time indices played by the animation.
+    """
     t, f_free_running, f_locked, filtered_error_hist = create_simulation(p)
     t_ms = t * 1e3
 
@@ -336,10 +381,34 @@ def build_animation(p):
             error_pt,
         )
 
+    return fig, update, len(t) - 1, frames
+
+
+def build_animation(p):
+    """Build the matplotlib FuncAnimation for the dither-lock response.
+
+    Args:
+        p: Simulation parameter dictionary.
+    """
+    fig, draw_frame, _last_index, frames = _lock_figure(p)
     anim = FuncAnimation(
-        fig, update, frames=frames, interval=1000 / p["fps"], blit=False
+        fig, draw_frame, frames=frames, interval=1000 / p["fps"], blit=False
     )
     return fig, anim
+
+
+def build_lock_final_plot(p):
+    """Draw the finished dither-lock figure without rendering animation frames.
+
+    The curves include every time sample, and the markers sit on the final
+    sample. That is the state the animation reaches at the end of the trace.
+
+    Args:
+        p: Simulation parameter dictionary.
+    """
+    fig, draw_frame, last_index, _frames = _lock_figure(p)
+    draw_frame(last_index)
+    return fig
 
 
 # ==========================================
@@ -534,9 +603,41 @@ with st.sidebar:
     }
 
 
-simulate_dither_lock_btn = st.button("Simulate dither-locking", type="primary")
-create_s_curve_anim_btn = st.button("Animate signal s-curve", type="primary")
-simulate_all_btn = st.button("Simulate all", type="primary")
+lock_anim_col, lock_plot_col = st.columns(2)
+with lock_anim_col:
+    simulate_dither_lock_btn = st.button(
+        "Animate PID dither-locking",
+        type="primary",
+        width="stretch",
+        help="Renders the dither-lock response frame by frame.",
+    )
+with lock_plot_col:
+    show_lock_plot = st.toggle(
+        "Show final dither-lock plot",
+        value=True,
+        help="Shows the finished dither-lock figure and updates it when parameters change. Turn it off to hide the figure. No animation frames are rendered.",
+    )
+
+s_curve_anim_col, s_curve_plot_col = st.columns(2)
+with s_curve_anim_col:
+    create_s_curve_anim_btn = st.button(
+        "Animate error signal s-curve",
+        type="primary",
+        width="stretch",
+        help="Renders the error-signal sweep frame by frame.",
+    )
+with s_curve_plot_col:
+    show_s_curve_plot = st.toggle(
+        "Show final S-curve plot",
+        value=True,
+        help="Shows the finished S-curve figure and updates it when parameters change. Turn it off to hide the figure. No animation frames are rendered.",
+    )
+
+simulate_all_btn = st.button(
+    "Simulate all",
+    type="primary",
+    help="Renders both animations.",
+)
 
 if simulate_dither_lock_btn or create_s_curve_anim_btn or simulate_all_btn:
     render_started = time.perf_counter()
@@ -575,9 +676,13 @@ if simulate_dither_lock_btn or simulate_all_btn:
             file_name="pid_dither_lock.mp4",
             mime="video/mp4",
         )
-# else:
-#     st.info("Adjust parameters in the sidebar, then click **Simulate dither-locking**.")
-
+if show_lock_plot:
+    lock_plot_started = time.perf_counter()
+    with st.spinner("Running dither-lock simulation..."):
+        lock_fig = build_lock_final_plot(params)
+    show_elapsed_time(lock_plot_started)
+    st.pyplot(lock_fig)
+    plt.close(lock_fig)
 
 if create_s_curve_anim_btn or simulate_all_btn:
     with st.spinner("Running simulation and rendering animation..."):
@@ -613,6 +718,14 @@ if create_s_curve_anim_btn or simulate_all_btn:
             file_name="dither_s_curve.mp4",
             mime="video/mp4",
         )
+
+if show_s_curve_plot:
+    s_curve_plot_started = time.perf_counter()
+    with st.spinner("Running S-curve simulation..."):
+        s_curve_fig = build_s_curve_final_plot(params)
+    show_elapsed_time(s_curve_plot_started)
+    st.pyplot(s_curve_fig)
+    plt.close(s_curve_fig)
 
 st.divider()
 
