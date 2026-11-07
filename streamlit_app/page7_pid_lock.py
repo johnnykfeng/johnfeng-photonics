@@ -9,13 +9,18 @@ generated in memory on demand via ``anim.save(...)``.
 """
 
 import tempfile
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 import streamlit.components.v1 as components
 from matplotlib.animation import FuncAnimation
 import johnfeng_photonics.pid_lock_module as pid_lock_module
-from johnfeng_photonics.pid_lock_module import cavity_transmission, create_simulation, animate_s_curve
+from johnfeng_photonics.pid_lock_module import (
+    cavity_transmission,
+    create_simulation,
+    animate_s_curve,
+)
 import matplotlib
 
 matplotlib.use("Agg")  # headless backend, no GUI window
@@ -31,18 +36,42 @@ except ImportError:
     pass
 
 
-def animation_to_gif_bytes(anim, fps):
-    """Render a FuncAnimation to GIF bytes for st.download_button."""
+def show_elapsed_time(started_at):
+    """Show how long rendering has taken since a simulate button was clicked.
+
+    Args:
+        started_at: ``time.perf_counter`` value captured when the click was handled.
+    """
+    elapsed_s = time.perf_counter() - started_at
+    st.markdown(f"**Elapsed time:** {elapsed_s:.2f} s")
+
+
+def animation_to_gif_bytes(anim, fps, dpi):
+    """Render a FuncAnimation to GIF bytes for st.download_button.
+
+    Args:
+        anim: Matplotlib animation to render.
+        fps: Playback frame rate passed to ``anim.save``.
+        dpi: Resolution passed to ``anim.save``. Lower values draw fewer pixels
+            and finish faster.
+    """
     with tempfile.NamedTemporaryFile(suffix=".gif") as tmp:
-        anim.save(tmp.name, writer="pillow", fps=fps)
+        anim.save(tmp.name, writer="pillow", fps=fps, dpi=dpi)
         tmp.seek(0)
         return tmp.read()
 
 
-def animation_to_mp4_bytes(anim, fps):
-    """Render a FuncAnimation to MP4 bytes for st.download_button."""
+def animation_to_mp4_bytes(anim, fps, dpi):
+    """Render a FuncAnimation to MP4 bytes for st.download_button.
+
+    Args:
+        anim: Matplotlib animation to render.
+        fps: Playback frame rate passed to ``anim.save``.
+        dpi: Resolution passed to ``anim.save``. Lower values draw fewer pixels
+            and finish faster.
+    """
     with tempfile.NamedTemporaryFile(suffix=".mp4") as tmp:
-        anim.save(tmp.name, writer="ffmpeg", fps=fps)
+        anim.save(tmp.name, writer="ffmpeg", fps=fps, dpi=dpi)
         tmp.seek(0)
         return tmp.read()
 
@@ -129,7 +158,7 @@ def build_s_curve_animation(p):
     fig.tight_layout()
 
     # Animate by stepping through f_sweep (subsample for a snappier playback)
-    frames = range(0, len(f_sweep), 4)
+    frames = range(0, len(f_sweep), p["s_curve_step"])
 
     def update(i):
         f = f_sweep[i]
@@ -176,8 +205,6 @@ def build_s_curve_animation(p):
             error_curve,
             error_pt,
         )
-
-    # anim = FuncAnimation(fig, update, frames=frames, interval=30, blit=False)
 
     anim = FuncAnimation(
         fig, update, frames=frames, interval=1000 / p["fps"], blit=False
@@ -325,22 +352,89 @@ st.write(
     "using dither modulation and a PID. Set the parameters and run."
 )
 
+with st.expander("Simulation / playback", expanded=False):
+    t_total_ms = st.number_input(
+        "Total time (ms)",
+        value=30.0,
+        min_value=1.0,
+        step=5.0,
+        help="A longer trace stores more dither-lock samples. With the same time step and frame step, that draws more frames and the dither-lock animation renders slower. The S-curve render is unchanged.",
+    )
+    dt_ms = st.number_input(
+        "Time step dt (ms)",
+        value=0.01,
+        min_value=0.001,
+        step=0.005,
+        format="%.3f",
+        help="A smaller step stores more dither-lock samples. With the same total time and frame step, that draws more frames and the dither-lock animation renders slower. The S-curve render is unchanged.",
+    )
+    frame_step = st.number_input(
+        "Frame step (subsample)",
+        value=40,
+        min_value=1,
+        step=1,
+        help="Draws every Nth dither-lock sample. A larger step draws fewer frames, so the dither-lock animation renders faster. The S-curve render is unchanged.",
+    )
+    s_curve_step = st.number_input(
+        "S-curve step size",
+        value=8,
+        min_value=1,
+        step=1,
+        help="Draws every Nth frequency point of the S-curve sweep. A larger step draws fewer frames, so the S-curve animation renders faster. The dither-lock render is unchanged.",
+    )
+    fps = st.number_input(
+        "Playback FPS",
+        value=10,
+        min_value=1,
+        max_value=60,
+        step=1,
+        help="Sets how fast the finished animation plays. The same frames are still drawn, so render time stays about the same.",
+    )
+    save_dpi = st.number_input(
+        "Save DPI",
+        value=80,
+        min_value=40,
+        max_value=200,
+        step=10,
+        help="Resolution of the GIF or MP4 download. A lower value draws fewer pixels per frame, so the download renders faster. The in-page player is unchanged.",
+    )
+    download_format = st.radio(
+        "Download format",
+        options=["None", "GIF", "MP4"],
+        index=0,
+        horizontal=True,
+        help="None is fastest because no download file is encoded. MP4 adds a faster encode than GIF. The in-page player is rendered for every choice.",
+    )
+
 with st.sidebar:
     st.header("Cavity")
-    cavity_center = st.number_input("Cavity center (MHz)", value=0.0, step=1.0)
+    cavity_center = st.number_input(
+        "Cavity center (MHz)",
+        value=0.0,
+        step=1.0,
+        help="Frequency of the resonance the lock holds. Laser frequency is detuning from 0 MHz, so a nonzero center moves the lock target off zero. Both animations use this center.",
+    )
     cavity_fwhm = st.number_input(
-        "Cavity FWHM (MHz)", value=10.0, min_value=0.1, step=0.5
+        "Cavity FWHM (MHz)",
+        value=10.0,
+        min_value=0.1,
+        step=0.5,
+        help="Full width of the Lorentzian resonance. A wider cavity softens the error-signal slope. The dither excursion also grows with this width, because dither amplitude is a fraction of FWHM.",
     )
     cavity_port = st.selectbox(
         "Cavity port",
         options=["return", "through"],
         index=0,
-        help="'return' = reflection dip (peak inverted); 'through' = transmission peak.",
+        help="Return inverts the Lorentzian into a reflection dip and flips the sign of the PID correction. Through keeps a transmission peak and applies the correction with the opposite sign.",
     )
 
     st.header("Dither")
     dither_freq = st.number_input(
-        "Dither frequency (Hz)", value=5000.0, min_value=1.0, step=100.0
+        "Dither frequency (Hz)",
+        value=5000.0,
+        min_value=1.0,
+        step=100.0,
+        help="Frequency of the sinusoidal frequency modulation. The photodetector signal is mixed with this same tone to make the error signal. A higher frequency packs more modulation cycles into each trace.",
     )
     dither_amp_frac = st.slider(
         "Dither amplitude (fraction of FWHM)",
@@ -348,48 +442,73 @@ with st.sidebar:
         max_value=1.0,
         value=0.2,
         step=0.01,
+        help="Peak dither excursion as a fraction of the cavity FWHM. A larger fraction samples more of the resonance and raises the error-signal amplitude until the sweep averages across the peak.",
     )
 
     st.header("PID")
-    Kp = st.number_input("Kp (proportional gain)", value=0.5, step=0.1, format="%.3f")
-    Ki = st.number_input("Ki (integral gain)", value=50.0, step=1.0, format="%.3f")
+    Kp = st.number_input(
+        "Kp (proportional gain)",
+        value=0.5,
+        step=0.1,
+        format="%.3f",
+        help="Multiplies the filtered error and applies that correction as soon as the PID turns on. A larger gain pulls the laser to the cavity faster and can overshoot. The S-curve sweep does not use this gain.",
+    )
+    Ki = st.number_input(
+        "Ki (integral gain)",
+        value=50.0,
+        step=1.0,
+        format="%.3f",
+        help="Accumulates the filtered error and removes a steady frequency offset after the PID turns on. A larger gain clears the offset faster and can make the lock oscillate. This simulation has no derivative term.",
+    )
     lpf_alpha = st.slider(
         "LPF alpha (low-pass coeff.)",
         min_value=0.001,
         max_value=1.0,
         value=0.01,
         step=0.001,
+        help="Smoothing on the mixed signal before the PID. A smaller alpha averages longer, so the error signal is quieter and slower. Alpha of 1 passes the mixer output with no filtering. The S-curve uses a full-period average instead of this filter.",
     )
     lock_on_time_ms = st.number_input(
-        "PID ON time (ms)", value=10.0, min_value=0.0, step=1.0
+        "PID ON time (ms)",
+        value=10.0,
+        min_value=0.0,
+        step=1.0,
+        help="Time when the servo starts correcting the laser. Before this, the laser follows the free-running drift. The gold band on the dither-lock plots marks this window. The S-curve sweep does not use this time.",
     )
 
     st.header("Laser drift")
-    drift_on = st.checkbox("Noise Drift ON", value=True)
-    drift_offset = st.number_input("Initial offset (MHz)", value=10.0, step=1.0)
-    drift_slope = st.number_input("Drift slope (MHz/s)", value=50.0, step=5.0)
+    drift_on = st.checkbox(
+        "Noise Drift ON",
+        value=True,
+        help="When checked, the unlocked laser includes the linear drift slope and random-walk noise. When unchecked, the laser stays at the initial offset. The S-curve sweep does not use this drift.",
+    )
+    drift_offset = st.number_input(
+        "Initial offset (MHz)",
+        value=10.0,
+        step=1.0,
+        help="Starting laser frequency detuning. The lock has to pull the laser from this offset to the cavity center. The S-curve sweep does not use this offset.",
+    )
+    drift_slope = st.number_input(
+        "Drift slope (MHz/s)",
+        value=50.0,
+        step=5.0,
+        help="Constant frequency ramp of the unlocked laser, used only while Noise Drift is on. After the PID turns on, the lock has to cancel this ramp. The S-curve sweep does not use this slope.",
+    )
     noise_amp = st.number_input(
         "Random-walk noise amplitude",
         value=0.1,
         min_value=0.0,
         step=0.05,
         format="%.3f",
+        help="Standard deviation of the frequency step added at each time step, used only while Noise Drift is on. A larger value makes the free-running trace wander more. The S-curve sweep does not use this noise.",
     )
-    seed = st.number_input("Random seed", value=0, min_value=0, step=1)
-
-    st.header("Simulation / playback")
-    t_total_ms = st.number_input("Total time (ms)", value=30.0, min_value=1.0, step=5.0)
-    dt_ms = st.number_input(
-        "Time step dt (ms)", value=0.01, min_value=0.001, step=0.005, format="%.3f"
-    )
-    frame_step = st.number_input(
-        "Frame step (subsample)",
-        value=20,
-        min_value=1,
+    seed = st.number_input(
+        "Random seed",
+        value=0,
+        min_value=0,
         step=1,
-        help="Plot every Nth simulation step as an animation frame.",
+        help="Seed for the random-walk noise, so the same drift trace can be repeated. A different seed draws a different noise realization. It has no effect while Noise Drift is off.",
     )
-    fps = st.number_input("Playback FPS", value=10, min_value=1, max_value=60, step=1)
 
     params = {
         "cavity_center": cavity_center,
@@ -409,7 +528,9 @@ with st.sidebar:
         "t_total": t_total_ms * 1e-3,
         "dt": dt_ms * 1e-3,
         "frame_step": int(frame_step),
+        "s_curve_step": int(s_curve_step),
         "fps": int(fps),
+        "save_dpi": int(save_dpi),
     }
 
 
@@ -417,31 +538,40 @@ simulate_dither_lock_btn = st.button("Simulate dither-locking", type="primary")
 create_s_curve_anim_btn = st.button("Animate signal s-curve", type="primary")
 simulate_all_btn = st.button("Simulate all", type="primary")
 
+if simulate_dither_lock_btn or create_s_curve_anim_btn or simulate_all_btn:
+    render_started = time.perf_counter()
+
 if simulate_dither_lock_btn or simulate_all_btn:
     with st.spinner("Running simulation and rendering animation..."):
         fig, anim = build_animation(params)
         html = anim.to_jshtml()
-        dither_lock_gif = animation_to_gif_bytes(anim, params["fps"])
-        dither_lock_mp4 = animation_to_mp4_bytes(anim, params["fps"])
+        if download_format == "GIF":
+            dither_lock_download = animation_to_gif_bytes(
+                anim, params["fps"], params["save_dpi"]
+            )
+        elif download_format == "MP4":
+            dither_lock_download = animation_to_mp4_bytes(
+                anim, params["fps"], params["save_dpi"]
+            )
         plt.close(fig)
 
+    show_elapsed_time(render_started)
     components.html(
         f'<div style="background-color: white;">{html}</div>',
         height=1200,
         scrolling=True,
     )
-    dl_col_gif, dl_col_mp4 = st.columns(2)
-    with dl_col_gif:
+    if download_format == "GIF":
         st.download_button(
             label="Download dither-lock animation (GIF)",
-            data=dither_lock_gif,
+            data=dither_lock_download,
             file_name="pid_dither_lock.gif",
             mime="image/gif",
         )
-    with dl_col_mp4:
+    elif download_format == "MP4":
         st.download_button(
             label="Download dither-lock animation (MP4)",
-            data=dither_lock_mp4,
+            data=dither_lock_download,
             file_name="pid_dither_lock.mp4",
             mime="video/mp4",
         )
@@ -453,27 +583,33 @@ if create_s_curve_anim_btn or simulate_all_btn:
     with st.spinner("Running simulation and rendering animation..."):
         fig, anim = build_s_curve_animation(params)
         html = anim.to_jshtml()
-        s_curve_gif = animation_to_gif_bytes(anim, params["fps"])
-        s_curve_mp4 = animation_to_mp4_bytes(anim, params["fps"])
+        if download_format == "GIF":
+            s_curve_download = animation_to_gif_bytes(
+                anim, params["fps"], params["save_dpi"]
+            )
+        elif download_format == "MP4":
+            s_curve_download = animation_to_mp4_bytes(
+                anim, params["fps"], params["save_dpi"]
+            )
         plt.close(fig)
 
+    show_elapsed_time(render_started)
     components.html(
         f'<div style="background-color: white;">{html}</div>',
         height=1200,
         scrolling=True,
     )
-    dl_col_gif, dl_col_mp4 = st.columns(2)
-    with dl_col_gif:
+    if download_format == "GIF":
         st.download_button(
             label="Download S-curve animation (GIF)",
-            data=s_curve_gif,
+            data=s_curve_download,
             file_name="dither_s_curve.gif",
             mime="image/gif",
         )
-    with dl_col_mp4:
+    elif download_format == "MP4":
         st.download_button(
             label="Download S-curve animation (MP4)",
-            data=s_curve_mp4,
+            data=s_curve_download,
             file_name="dither_s_curve.mp4",
             mime="video/mp4",
         )
