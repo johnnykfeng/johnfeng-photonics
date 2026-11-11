@@ -60,7 +60,7 @@ with st.sidebar:
     st.header("Sweep controls")
     sweep_param = st.selectbox(
         "Sweep parameter",
-        options=["dither_freq", "dither_amp", "cavity_fwhm"],
+        options=["dither_amp", "cavity_fwhm", "dither_freq"],
         index=0,
         help="All non-swept parameters stay fixed to the base values above.",
     )
