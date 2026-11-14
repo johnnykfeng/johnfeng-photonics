@@ -9,6 +9,7 @@ parquet_loader_page = st.Page("page5_parquet_loader.py", title="Parquet Loader",
 pid_lock_page = st.Page("page7_pid_lock.py", title="Dither-Locking to Resonance Simulation", icon="🖥️")
 page8 = st.Page("page8_searching_lock_parameters.py", title="Sweep Dither-Locking Parameters", icon="🔍")
 pid_simulate_page = st.Page("page9_pid_simulate.py", title="PID Tuning Simulation", icon="🌡️")
+pdh_lock_page = st.Page("page10_pdh_lock.py", title="Pound–Drever–Hall Locking Simulation", icon="🔒")
 about_page = st.Page("about_page.py", title="About", icon="ℹ️")
 
 pg = st.navigation([
@@ -21,6 +22,7 @@ pg = st.navigation([
     pid_lock_page,
     page8,
     pid_simulate_page,
+    pdh_lock_page,
     about_page])
 
 st.set_page_config(page_title="Photonics Calculator", page_icon="🔬")
